@@ -1,5 +1,6 @@
 package com.seda.imagesearchapp_compose
 
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -27,39 +28,55 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 @OptIn(ExperimentalFoundationApi::class)
 @Preview
 @Composable
-fun MainContent(viewModel: MainViewModel = hiltViewModel()){
-    val query : MutableState<String> = remember{ mutableStateOf("") }
+fun MainContent(viewModel: MainViewModel = hiltViewModel()) {
+    val query: MutableState<String> = remember { mutableStateOf("") }
+    val result = viewModel.list.value
+
+    Surface(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.padding(8.dp)) {
+
+            OutlinedTextField(value = query.value,
+                onValueChange = {
+                    query.value = it
+                    viewModel.getImageList(query.value)
+                },
+                enabled = true,
+                singleLine = true,
+                leadingIcon = {
+                    Icon(imageVector = Icons.Default.Search, contentDescription = "")
+                }, label = { Text(text = "Search here...")},
+                modifier = Modifier.fillMaxWidth()
+            )
 
 
-    androidx.compose.material.Surface(modifier = Modifier.fillMaxSize()) {
-        Column(modifier=Modifier.padding(8.dp)){
-OutlinedTextField(value = query.value, onValueChange = {
-    query.value = it
-}, enabled = true, singleLine = true, leadingIcon = {
-    Icon(imageVector = Icons.Default.Search, contentDescription ="" )
-}, modifier = Modifier.fillMaxWidth())
-        }
-        if(viewModel.list.value.isLoading){
-            Box(modifier = Modifier.fillMaxSize()){
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+
+            if (result.isLoading) {
+                Log.d("TAG", "MainContent: in the loading")
+                Box(modifier = Modifier
+                    .fillMaxSize()) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
             }
-        }
-        if (viewModel.list.value.error.isBlank()){
-            Box(modifier = Modifier.fillMaxSize()){
-                      Text(modifier = Modifier.align(Alignment.Center), text = viewModel.list.value.error)
+            if (result.error.isNotBlank()) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Text(
+                        modifier = Modifier.align(Alignment.Center),
+                        text = viewModel.list.value.error
+                    )
+                }
             }
-        }
-        if (viewModel.list.value.data.isNotEmpty()){
-         LazyVerticalGrid(cells = GridCells.Fixed(2)){
-             viewModel.list.value.data.let {
+            if (result.data.isNotEmpty()) {
+                LazyVerticalGrid(cells = GridCells.Fixed(2), modifier = Modifier.padding(20.dp)) {
+                    viewModel.list.value.data.let {
 
-                  items(it)   {
-                      MainContentItem(it)
+                        items(it) {
+                            MainContentItem(it)
+                        }
                     }
-             }
 
 
-         }
+                }
+            }
         }
     }
 
@@ -67,10 +84,12 @@ OutlinedTextField(value = query.value, onValueChange = {
 
 @Composable
 fun MainContentItem(hit: Hit) {
-    Card(modifier = Modifier.padding(8.dp).fillMaxWidth().height(200.dp)) {
+    Card(modifier = Modifier
+        .padding(8.dp)
+        .fillMaxWidth()
+        .height(200.dp)) {
         Image(painter = rememberImagePainter(data = hit.largeImageURL), contentScale = ContentScale.Crop, contentDescription = null,
             modifier = Modifier
-                .padding(4.dp)
                 .fillMaxWidth()
                 .fillMaxHeight())
     }
